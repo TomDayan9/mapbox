@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Conquer and Divide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      h2,
+      h3 {
+        margin: 10px;
+        font-size: 1.2em;
+      }
+      h3 {
+        font-size: 1em;
+      }
+      p {
+        font-size: 0.85em;
+        margin: 10px;
+        text-align: left;
+      }
+      .map-overlay {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.8);
+        margin-right: 20px;
+        font-family: Arial, sans-serif;
+        overflow: auto;
+        border-radius: 3px;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+      #features {
+        top: 0;
+        height: 100px;
+        margin-top: 20px;
+        width: 250px;
+      }
+      #legend {
+        padding: 10px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        line-height: 18px;
+        height: 380px;
+        top: 100%;
+        margin-left: 20px;
+        margin-top: 20px;
+        width: 300px;
+        position: relative;
+
+      }
+      .legend-key {
+        display: inline-block;
+        border-radius: 20%;
+        width: 10px;
+        height: 10px;
+        margin-right: 5px;
+      }
+      .icon {
+        background: url('./map-data/checkpoints-15.svg');
+        height: 15px;
+        width: 15px;
+        display: inline-block;
+        margin-right: 2px;
+      }
+      .accordion {
+        /* top: 100%;
+        line-height: 18px;
+        margin-top: 20px;
+        margin-left: 20px;
+        position: relative;
+        padding: 10px; */
+        /* background-color: #eee; */
+        /* color: #444; */
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        /* padding: 18px; */
+        height: 30px;
+        width: 260px;
+        text-align: left;
+        border: none;
+        outline: none;
+        transition: 0.4s;
+      }
+      .active, .accordion:hover {
+        background-color: #ccc;
+      }
+      .panel {
+        padding: 0 18px;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div class="map-overlay" id="legend"></div>
+
+    <script>
+      // define access token
+      mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpa2xlaW4iLCJhIjoiY2toNG04aXBzMDl2cTJzbzlmNHc3Ym4xeSJ9.oMpVy4Lh1G8_t14X6ASKiw';
+
+      //create map
+      var map = new mapboxgl.Map({
+        container: 'map', // container id
+        style: 'mapbox://styles/adiklein/ckhdcb17801y819mstttohsg5' // map style URL from Mapbox Studio
+        
+      });
+
+
+      // wait for map to load before adjusting it
+      map.on('load', function () {
+        // make a pointer cursor
+        map.getCanvas().style.cursor = 'default';
+
+        // make a pointer cursor
+        map.getCanvas().style.cursor = 'default';
+
+        console.log(map.style);
+
+        // define layer names
+        var layers = [
+          'Green Line',
+          'West Bank Separation Barrier',
+          'Palestinian Settlements',
+          'Area A',
+          'Area B',
+          'Area C',
+          'Settlements',
+          'Tamil Settlements',
+          'Closed Millitary Zones',
+          'Declared State Lands',
+          // 'Roads',
+          'Checkpoints'
+        ];
+        var colors = [
+          '#00ff80',
+          '#000000',
+          '#663300',
+          '#964f1d',
+          '#c58749',
+          '#85cdfa',
+          '#000080',
+          '#046c15',
+          '#808080',
+          '#0000ff',
+          // '#ffffff',
+          '#808080'
+        ];
+
+        var ids = [
+          'Green-Line',
+          'West-Bank Separation Barrier',
+          'Palestinian Settlements',
+          'Area - A',
+          'Area - B',
+          'Area - C',
+          'Settlements',
+          'Tamil Settlements',
+          'Closed Military Zones',
+          'Declared State Land',
+          // 'Roads',
+          'Checkpoints'
+        ]
+
+        // var layers_acc = document.createElement('button');
+        // layers_acc.className = 'accordion';
+        // layers_acc.id = 'layers_acc';
+        // layers_acc.innerHTML = 'Map Layers';
+
+        var line_div = document.createElement('div');
+        const all_box = document.createElement('input');
+        all_box.type = 'checkbox';
+        all_box.checked = true;
+        all_box.id = 'all_box';
+        all_box.href = '#';
+        all_box.textContent = 'all_box';
+        all_box.className = 'active';
+
+        all_box.onchange = function (e) {
+          for (i = 2; i < legend.children.length - 2; i++)
+          {
+            const current_layer = legend.children[i].children[0];
+            if (current_layer.id != 'Palestinian Settlements' &&
+              current_layer.id != 'Settlements' &&
+              current_layer.id != 'Tamil Settlements') 
+            {
+              if (this.checked == false) {
+                current_layer.checked = false;
+              } else {
+                current_layer.checked = true;
+              }
+              const clickedLayer = current_layer.textContent;
+              e.preventDefault();
+              e.stopPropagation();
+              
+              const visibility = map.getLayoutProperty(
+                clickedLayer,
+                'visibility'
+              );
+              // Toggle layer visibility by changing the layout object's visibility property.
+              if (visibility == 'visible' && current_layer.checked == false) {
+                  map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+                  this.className = '';
+                } else {
+                  this.className = 'active';
+                  map.setLayoutProperty(
+                    clickedLayer,
+                    'visibility',
+                    'visible'
+                  );
+                }
+              }
+            
+          }
+          
+        };
+
+        var all_title = document.createElement('span');
+        all_title.innerHTML = 'All Layers';
+        all_title.style = "font-size:10.0pt;"
+
+        line_div.appendChild(all_box);
+        line_div.appendChild(all_title);
+        legend.appendChild(line_div);
+
+        var space = document.createElement('br');
+        legend.appendChild(space);
+
+        // create legend
+        for (i = 0; i < layers.length; i++) {
+          var layer = layers[i];
+          var color = colors[i];
+          var item = document.createElement('div');
+          item.id = 'item_' + ids[i];
+          var key = document.createElement('span');
+          if (layer == 'Checkpoints') {
+            key.className = 'icon';
+          } else {
+            key.className = 'legend-key';
+            key.style.backgroundColor = color;
+          }
+          
+          
+          const link = document.createElement('input');
+          link.type = 'checkbox';
+          link.checked = true;
+          link.id = ids[i];
+          link.href = '#';
+          link.textContent = ids[i];
+          link.className = 'active';
+          map.setLayoutProperty(
+                link.textContent,
+                'visibility',
+                'visible'
+              );
+          // Show or hide layer when the toggle is clicked.
+          link.onchange = function (e) {
+            const clickedLayer = this.textContent;
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const visibility = map.getLayoutProperty(
+              clickedLayer,
+              'visibility'
+            );
+            
+            // Toggle layer visibility by changing the layout object's visibility property.
+            if (visibility == 'visible' && link.checked == false) {
+              map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+              this.className = '';
+            } else {
+              this.className = 'active';
+              map.setLayoutProperty(
+                clickedLayer,
+                'visibility',
+                'visible'
+              );
+            }
+          };
+
+          var value = document.createElement('span');
+          value.innerHTML = layer;
+          value.style = "font-size:10.0pt;"
+
+          item.appendChild(link);
+          item.appendChild(key);
+          item.appendChild(value);
+          legend.appendChild(item);
+
+        }
+
+        // Hide tamil settlement
+        var tamil_checkbox = document.getElementById('item_' + 'Tamil Settlements').children[0];
+        tamil_checkbox.className = '';
+        tamil_checkbox.checked = false;
+        map.setLayoutProperty('Tamil Settlements', 'visibility', 'none');
+
+        var space2 = document.createElement('br');
+        legend.appendChild(space2);
+
+        // layers_acc.addEventListener("click", function() {
+        //   this.classList.toggle("active");
+        //   for (i = 0; i < this.children.length; i++) {
+        //     var panel = this.children[i];
+        //     if (panel.style.maxHeight) {
+        //       panel.style.maxHeight = null;
+        //     } else {
+        //       panel.style.maxHeight = panel.scrollHeight + "px";
+        //     }
+        //   }
+          
+        // });
+
+        // legend.appendChild(layers_acc);
+
+        var periods = ['Current', 'Present', 'Near Future', 'Far Future'];
+
+        var time_filter = document.createElement('button');
+        time_filter.className = 'accordion';
+        time_filter.id = 'filter';
+        time_filter.innerHTML = 'Choose Time Period';
+        for (i = 0; i < periods.length; i++) {
+          var tmp_div = document.createElement('div');
+          tmp_div.className = 'panel';
+          var tmp_radio = document.createElement('input');
+          tmp_radio.type = 'radio';
+          tmp_radio.id = periods[i];
+          tmp_radio.name = 'time';
+          tmp_radio.value = periods[i]
+          var label = document.createElement('label');
+          label.htmlFor = periods[i];
+          label.innerHTML = periods[i];
+          if (i == 0)
+            tmp_radio.checked = true;
+          tmp_div.appendChild(tmp_radio);
+          tmp_div.appendChild(label);
+          time_filter.appendChild(tmp_div);
+        }
+        
+        
+        time_filter.addEventListener("click", function() {
+          this.classList.toggle("active");
+          for (i = 0; i < this.children.length; i++) {
+            var panel = this.children[i];
+            if (panel.style.maxHeight) {
+              panel.style.maxHeight = null;
+            } else {
+              panel.style.maxHeight = panel.scrollHeight + "px";
+            }
+          }
+          
+        });
+
+        time_filter.addEventListener('change', function(e) {
+          var time = e.target.value;
+          // update the map filter
+          var tamil_checkbox = document.getElementById('item_' + 'Tamil Settlements').children[0];
+          if (time === periods[0]) {
+            filterTime = ["match", ["get", "time"], ["far future", "near future"], false, true];
+            tamil_checkbox.className = '';
+            tamil_checkbox.checked = false;
+            map.setLayoutProperty('Tamil Settlements', 'visibility', 'none');
+          } else if (time === periods[1]) {
+            map.setLayoutProperty('Tamil Settlements', 'visibility', 'visible');
+            filterTime = ["match", ["get", "time"], ["far future", "near future"], false, true];
+            tamil_checkbox.className = 'active';
+            tamil_checkbox.checked = true;
+          } else if (time === periods[2]) {
+            map.setLayoutProperty('Tamil Settlements', 'visibility', 'visible');
+            filterTime = ["match", ["get", "time"], ["far future", "present"], false, true];
+            tamil_checkbox.className = 'active';
+            tamil_checkbox.checked = true;
+          } else if (time === periods[3]) {
+            map.setLayoutProperty('Tamil Settlements', 'visibility', 'visible');
+            filterTime = ["match", ["get", "time"], ["present", "near future"], false, true];
+            tamil_checkbox.className = 'active';
+            tamil_checkbox.checked = true;
+          } else {
+            console.log('error');
+          }
+          map.setFilter('Settlements', ['all', filterTime]);
+          map.setFilter('Palestinian Settlements', ['all', filterTime]);
+          map.setFilter('Tamil Settlements', ['all', filterTime]);
+        });
+        legend.appendChild(time_filter);
+
+        function hoverPopupMove(popup) {
+          map.on('mousemove', function (e) {
+              var features = map.queryRenderedFeatures(e.point, {
+                layers: ids
+              });
+              if (!features.length) {
+                return;
+              }
+              var feature = features[0];
+              popup.setLngLat(e.lngLat)
+              .setHTML(
+                '<h3>' +
+                feature.layer.id +
+                '</h3>' +
+                '<p>' +
+                feature.properties.name_en +
+                '</p>'
+              )
+              .addTo(map);
+          });
+          map.on('mouseleave', function(e) {
+            popup.remove();
+          });
+        }
+      
+      var popup = new mapboxgl.Popup({ offset: [0, -15] })
+      hoverPopupMove(popup);
+        
+      });
+    </script>
+  </body>
+</html>
+
+
+
